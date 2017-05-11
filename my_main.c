@@ -73,6 +73,11 @@ void first_pass() {
   //they must be extern variables
   extern int num_frames;
   extern char name[128]; 
+  int i;
+  
+  for (i = 0; i < lastop; i++){
+    if (op[i].frames
+  }
 
   return;
 }
