@@ -76,10 +76,27 @@ void first_pass() {
   int i;
   
   for (i = 0; i < lastop; i++){
-    if (op[i].frames
+    switch(op[i].opcode)
+      {
+      case FRAMES: 
+	num_frames = op[i].op.frames.num_frames;
+	if (name == NULL){
+	  strcpy(name,"DEFAULT NAME");
+	  printf("FRAMES found but BASENAME not, default name: %s\n",name);
+	}
+	break;
+      case BASENAME:
+	strncpy(name,op[i].op.basename.p->name,sizeof(op[i].op.basename.p->name));
+	break;
+      case VARY:
+	if (num_frames == 0){
+	  printf("ERROR: VARY used but FRAMES is not\n");
+	  exit(0);
+	}
+      }
   }
 
-  return;
+    return;
 }
 
 /*======== struct vary_node ** second_pass() ==========
