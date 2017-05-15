@@ -95,7 +95,6 @@ void first_pass() {
 	}
       }
   }
-
     return;
 }
 
@@ -121,7 +120,20 @@ void first_pass() {
   jdyrlandweaver
   ====================*/
 struct vary_node ** second_pass() {
-  return NULL;
+  struct vary_node *knobs = (struct vary_node*)malloc(sizeof(struct vary_node));
+  int i;
+  for (i = 0; i < lastop; i++){
+    switch(op[i].opcode)
+      {
+      case VARY:
+	strncpy(knobs->name 
+	break;
+      }
+  }
+}
+
+void process_knobs(){
+  return;
 }
 
 
