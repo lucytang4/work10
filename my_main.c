@@ -121,15 +121,25 @@ void first_pass() {
   ====================*/
 struct vary_node ** second_pass() {
   struct vary_node *knobs = (struct vary_node*)malloc(sizeof(struct vary_node));
+  int start_frame;
+  int end_frame;
+  double end_val;
   int i;
   for (i = 0; i < lastop; i++){
     switch(op[i].opcode)
       {
       case VARY:
-	strncpy(knobs->name 
+	start_frame = op[i].op.vary.start_frame;
+	end_frame = op[i].op.vary.end_frame;
+	end_val = op[i].op.vary.end_val;
+	for (; start_frame <= end_frame; start_frame++){
+	  strncpy(knobs[start_frame].name,op[i].op.vary.p->name,sizeof(op[i].op.vary.p->name));
+	  knobs[start_frame].value = end_val;
+	}
 	break;
       }
   }
+  print_knobs();
 }
 
 void process_knobs(){
