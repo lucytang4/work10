@@ -120,11 +120,12 @@ void first_pass() {
   jdyrlandweaver
   ====================*/
 struct vary_node ** second_pass() {
-  struct vary_node *knobs = (struct vary_node*)malloc(sizeof(struct vary_node));
+  struct vary_node **knobs = (struct vary_node**)malloc(sizeof(struct vary_node));
   int start_frame;
   int end_frame;
   double end_val;
   int i;
+  extern int num_frames;
   for (i = 0; i < lastop; i++){
     switch(op[i].opcode)
       {
@@ -132,25 +133,24 @@ struct vary_node ** second_pass() {
 	start_frame = op[i].op.vary.start_frame;
 	end_frame = op[i].op.vary.end_frame;
 	end_val = op[i].op.vary.end_val;
+	if (num_frames < start_frame || num_frames < end_frame){
+	  printf("ERROR: invalid FRAME range\n");
+	  exit(0);
+	}
 	for (; start_frame <= end_frame; start_frame++){
-	  strncpy(knobs[start_frame].name,op[i].op.vary.p->name,sizeof(op[i].op.vary.p->name));
-	  knobs[start_frame].value = end_val;
+	  strncpy(knobs[start_frame]->name,op[i].op.vary.p->name,sizeof(op[i].op.vary.p->name));
+	  knobs[start_frame]->value = end_val;
 	}
 	break;
       }
   }
-  print_knobs();
+  return knobs;
 }
-
-void process_knobs(){
-  return;
-}
-
 
 /*======== void print_knobs() ==========
 Inputs:   
-Returns: 
-
+Returns:
+ 
 Goes through symtab and display all the knobs and their
 currnt values
 
@@ -224,6 +224,26 @@ void my_main() {
     printf("%d: ",i);
       switch (op[i].opcode)
 	{
+	case FRAMES:
+	  printf("Frames: %6.2f",op[i].op.frames.num_frames);
+	  break;
+	case BASENAME:
+	  printf("Basename: %s",op[i].op.basename.p->name);
+	  break;
+	case SET:
+	  printf("Set: %s %6.2f",op[i].op.set.p->name,op[i].op.set.val);
+	  set_value(op[i].op.set.p,op[i].op.set.val);
+	  break;
+	case SETKNOBS:
+	  printf("Setknobs: %6.2f",op[i].op.setknobs.value);
+	  break; 
+	case VARY:
+	  printf("Vary: %s %6.2f %6.2f %6.2f %6.2f",
+		 op[i].op.vary.p->name,
+		 op[i].op.vary.start_frame,
+		 op[i].op.vary.end_frame,
+		 op[i].op.vary.start_val,op[i].op.vary.end_val);
+	  break;
 	case SPHERE:
 	  printf("Sphere: %6.2f %6.2f %6.2f r=%6.2f",
 		 op[i].op.sphere.d[0],op[i].op.sphere.d[1],
