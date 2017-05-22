@@ -95,7 +95,7 @@ void first_pass() {
 	}
       }
   }
-    return;
+  return;
 }
 
 /*======== struct vary_node ** second_pass() ==========
@@ -120,15 +120,14 @@ void first_pass() {
   jdyrlandweaver
   ====================*/
 struct vary_node ** second_pass() {
-  struct vary_node **knobs = (struct vary_node**)malloc(sizeof(struct vary_node*));
-  struct vary_node *knobs2 = (struct vary_node *)malloc(sizeof(struct vary_node));
+  struct vary_node **knobs = (struct vary_node**)malloc(sizeof(struct vary_node*)*num_frames);
+  extern int num_frames;
   int start_frame;
   int end_frame;
+  int frame;
   double start_val;
   double end_val;
-  double add;
   int i;
-  extern int num_frames;
   for (i = 0; i < lastop; i++){
     switch(op[i].opcode)
       {
@@ -137,17 +136,18 @@ struct vary_node ** second_pass() {
 	end_frame = op[i].op.vary.end_frame;
 	start_val = op[i].op.vary.start_val;
 	end_val = op[i].op.vary.end_val;
-	add = (end_val-start_val)/(end_frame-start_frame);
 	if (num_frames < start_frame || num_frames < end_frame){
 	  printf("ERROR: invalid FRAME range\n");
 	  exit(0);
 	}
-	for (; start_frame <= end_frame; start_frame++){
+	for (frame = start_frame; frame < end_frame; frame++){
+	  struct vary_node *knobs2 = (struct vary_node *)malloc(sizeof(struct vary_node));
 	  strncpy(knobs2->name,op[i].op.vary.p->name,sizeof(op[i].op.vary.p->name));
-	  knobs2->value = start_val;
-	  start_val += add;
-	  knobs[i] = knobs2;
-	  knobs2 = knobs2->next;
+	  knobs2->value = (double)(frame-start_frame)/(end_frame-start_frame)*(end_val-start_val);
+	  knobs2->next = knobs[frame];
+	  knobs[frame] = knobs2;
+	  //knobs[frame] = knobs2;
+	  //knobs2 = knobs2->next;
 	}
 	break;
       }
@@ -240,6 +240,10 @@ void my_main() {
     knobs = second_pass();
     for (frames = 0; frames < num_frames; frames++){
       knobs2 = knobs[frames];
+      while (knobs2 != NULL){
+	set_value(lookup_symbol(knobs2->name),knobs2->value);
+	knobs2 = knobs2->next;
+      }
       for (i=0;i<lastop;i++) {
 	printf("%d: ",i);
 	switch (op[i].opcode)
@@ -256,6 +260,10 @@ void my_main() {
 	    break;
 	  case SETKNOBS:
 	    printf("Setknobs: %6.2f",op[i].op.setknobs.value);
+	    while (knobs2 != NULL){
+	      set_value(lookup_symbol(knobs2->name),op[i].op.setknobs.value);
+	      knobs2 = knobs2->next;
+	    }
 	    break; 
 	  case VARY:
 	    printf("Vary: %s %6.2f %6.2f %6.2f %6.2f",
@@ -357,9 +365,9 @@ void my_main() {
 	      {
 		printf("\tknob: %s",op[i].op.move.p->name);
 	      }
-	    tmp = make_translate( op[i].op.move.d[0]*knobs2->value,
-				  op[i].op.move.d[1]*knobs2->value,
-				  op[i].op.move.d[2]*knobs2->value);
+	    tmp = make_translate( op[i].op.move.d[0],
+				  op[i].op.move.d[1],
+				  op[i].op.move.d[2]);
 	    matrix_mult(peek(systems), tmp);
 	    copy_matrix(tmp, peek(systems));
 	    tmp->lastcol = 0;
@@ -372,9 +380,9 @@ void my_main() {
 	      {
 		printf("\tknob: %s",op[i].op.scale.p->name);
 	      }
-	    tmp = make_scale( op[i].op.scale.d[0]*knobs2->value,
-			      op[i].op.scale.d[1]*knobs2->value,
-			      op[i].op.scale.d[2]*knobs2->value);
+	    tmp = make_scale( op[i].op.scale.d[0],
+			      op[i].op.scale.d[1],
+			      op[i].op.scale.d[2]);
 	    matrix_mult(peek(systems), tmp);
 	    copy_matrix(tmp, peek(systems));
 	    tmp->lastcol = 0;
@@ -387,7 +395,7 @@ void my_main() {
 	      {
 		printf("\tknob: %s",op[i].op.rotate.p->name);
 	      }
-	    theta =  op[i].op.rotate.degrees * (M_PI / 180)*knobs2->value;
+	    theta =  op[i].op.rotate.degrees * (M_PI / 180);
 	    if (op[i].op.rotate.axis == 0 )
 	      tmp = make_rotX( theta );
 	    else if (op[i].op.rotate.axis == 1 )
@@ -422,12 +430,11 @@ void my_main() {
       sprintf(file,"%s%s%s",name,s,".png");
       save_extension(t,file);
       clear_screen(t);
-      free_stack(systems);
-      free_matrix(tmp);
+      systems = new_stack();
+      tmp->lastcol = 0;
     }
     make_animation(file);
   }
-  
   //NO ANIMATION
   else{
     for (i=0;i<lastop;i++) {
